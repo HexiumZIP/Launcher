@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>hexium.ico</ApplicationIcon>
+    <AssemblyName>HexiumLauncher</AssemblyName>
+    <RootNamespace>HexiumLauncher</RootNamespace>
+    <AssemblyTitle>Hexium Launcher</AssemblyTitle>
+    <Product>Hexium Launcher</Product>
+    <Company>Hexium</Company>
+    <Authors>Hexium</Authors>
+    <Copyright>Copyright © Hexium 2026</Copyright>
+    <Description>Installer and protocol launcher for the Hexium 2020 client.</Description>
+    <Version>2.1.44</Version>
+    <AssemblyVersion>2.1.40.0</AssemblyVersion>
+    <FileVersion>2.1.40.0</FileVersion>
+    <InformationalVersion>2.1.22-projectx-client</InformationalVersion>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="cacert.pem" />
+    <EmbeddedResource Include="hexium.ico" />
+    <EmbeddedResource Include="logo_bb.png" LogicalName="HexiumLauncher.logo_hexium.png" />
+  </ItemGroup>
+
+</Project>

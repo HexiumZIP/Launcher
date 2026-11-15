@@ -116,7 +116,7 @@ namespace HexiumLauncher
             if (text.Contains("no such host") || text.Contains("name or service")
                 || text.Contains("nameresolution"))
             {
-                return "This PC could not look up hexium.zip. That is usually DNS filtering - "
+                return "This PC could not look up hexium.wtf. That is usually DNS filtering - "
                      + "try changing your DNS to 1.1.1.1 or 8.8.8.8, or test on a phone hotspot.";
             }
 
@@ -330,27 +330,30 @@ namespace HexiumLauncher
         private string ClientDisplayName = null!;
         private bool IsDevClient = false;
 
-        private const string LauncherVersion = "2.1.44";
+        private const string LauncherVersion = "2.1.70";
         private const string LegacyPolicyResponseJson =
             "{\"isSubjectToChinaPolicies\":false,\"arePaidRandomItemsRestricted\":false," +
             "\"isPaidItemTradingAllowed\":true,\"allowedExternalLinkReferences\":[]}";
-        private const string UpdateManifestUrl = "https://hexium.zip/downloads/launcher-manifest.json";
+        private const string UpdateManifestUrl = "https://hexium.wtf/downloads/launcher-manifest.json";
 
-        private const string VoiceHelperUrl = "https://hexium.zip/downloads/HexiumVoice.exe?v=8bead9a4a7224d93";
+        private const string VoiceHelperUrl = "https://hexium.wtf/downloads/HexiumVoice.exe?v=8bead9a4a7224d93";
         private const string VoiceHelperSha256 = "8bead9a4a7224d937c4cb6254d436e36e5044fda115423892778bd70fe7f54df";
         private const string Protocol = "hexium";
         private const string LegacyProtocol = "bbclient";
         private const string UninstallKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Hexium";
         private const long MaximumLauncherDownloadBytes = 300L * 1024L * 1024L;
 
-        private const string SiteBaseUrl = "https://hexium.zip";
+        private const string SiteBaseUrl = "https://hexium.wtf";
 
-        private const string ClientSettingsBaseUrl = "https://www.hexium.zip";
-        private static readonly string ExpectedClientAppSettings =
+        private const string ClientSettingsBaseUrl = "https://www.hexium.wtf";
+        
+        private const string LegacyClientBaseUrl = "http://www.hexium.wtf";
+        private string ClientBaseUrl => (this.year == "2016" || this.year == "2015") ? LegacyClientBaseUrl : ClientSettingsBaseUrl;
+        private string ExpectedClientAppSettings =>
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" +
             "<Settings>\r\n" +
             "\t<ContentFolder>content</ContentFolder>\r\n" +
-            $"\t<BaseUrl>{ClientSettingsBaseUrl}/</BaseUrl>\r\n" +
+            $"\t<BaseUrl>{ClientBaseUrl}/</BaseUrl>\r\n" +
             "</Settings>\r\n";
 
         private sealed class LauncherUpdateManifest
@@ -368,7 +371,7 @@ namespace HexiumLauncher
             this.rawUrl = rawUrl;
             this.jobId = jobId;
 
-            this.year = DeterminePlaceYear(placeId);
+            this.year = !string.IsNullOrEmpty(year) ? year : DeterminePlaceYear(placeId);
 
             clientlocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Hexium");
             cfgpath = Path.Combine(clientlocation, "launcher.cfg");
@@ -394,10 +397,14 @@ namespace HexiumLauncher
                     http.DefaultRequestHeaders.Add("User-Agent", "HexiumLauncher/" + LauncherVersion);
                     string json = http.GetStringAsync($"{SiteBaseUrl}/api/place-year?placeId={pid}").GetAwaiter().GetResult();
                     using var doc = JsonDocument.Parse(json);
-                    if (doc.RootElement.TryGetProperty("year", out var yp) && yp.GetInt32() == 2021)
+                    if (doc.RootElement.TryGetProperty("year", out var yp))
                     {
-                        WriteLog($"Place {pid} is year 2021; using the 2021 client.");
-                        return "2021";
+                        int placeYear = yp.GetInt32();
+                        if (placeYear == 2021 || placeYear == 2018 || placeYear == 2016)
+                        {
+                            WriteLog($"Place {pid} is year {placeYear}; using the {placeYear} client.");
+                            return placeYear.ToString();
+                        }
                     }
                 }
             }
@@ -406,17 +413,21 @@ namespace HexiumLauncher
         }
         private void ConfigureClientProfile(bool isDev)
         {
+            
+            if (this.year == "2018" || this.year == "2016")
+                isDev = false;
+
             IsDevClient = isDev;
             if (isDev)
             {
                 ClientDir = Path.Combine(clientlocation, "DevClient2020");
                 ClientZIP = Path.Combine(clientlocation, "DevClient2020.zip");
                 ClientExe = Path.Combine(ClientDir, "DevHexiumPlayerBeta.exe");
-                DownloadUrl = "https://hexium.zip/downloads/DevClient2020.zip?v=6b9e5de7cefa296d";
-                ClientArchiveSha256 = "6b9e5de7cefa296d5892e0940be96944bbbec0329f5f1a5455ffe3299aa9590a";
-                ClientExecutableSha256 = "82b306892afcc25fb6a27b1fc0208fe25b72b6dfbaab928a19151660eb5e5a47";
+                DownloadUrl = "https://hexium.wtf/downloads/DevClient2020-v6.zip?v=d366375fdc431f4b";
+                ClientArchiveSha256 = "d366375fdc431f4bdfd1fd60d89dbdb4d09201d1e1e5d56175cbb08f29b856e3";
+                ClientExecutableSha256 = "dc3274c1b5ac3f6e158bf29055c6be567cb1435b659693ab200dcbcddbc35b9c";
 
-                ClientVersion = "2020L-dev-hexium-v3";
+                ClientVersion = "2020L-dev-hexium-v7";
                 ClientDisplayName = "Hexium 2020 Dev Client";
             }
             else if (this.year == "2021")
@@ -424,22 +435,44 @@ namespace HexiumLauncher
                 ClientDir = Path.Combine(clientlocation, "HexiumPlayer2021");
                 ClientZIP = Path.Combine(clientlocation, "HexiumPlayer2021.zip");
                 ClientExe = Path.Combine(ClientDir, "HexiumPlayer2021.exe");
-                DownloadUrl = "https://hexium.zip/downloads/HexiumPlayer2021.zip?v=ad60da83422dae04";
-                ClientArchiveSha256 = "ad60da83422dae041545a2ad8b897ef38b5848fd2d2240afc57e95e357309dcd";
-                ClientExecutableSha256 = "905a88282fdde9b1ff69f60312bcefe095f1301cfd275035f8bdb9527084795d";
-                ClientVersion = "2021M-hexium-v1";
+                DownloadUrl = "https://hexium.wtf/downloads/HexiumPlayer2021-v17.zip?v=a0ad514093b17adb";
+                ClientArchiveSha256 = "a0ad514093b17adb398c71be460443e5044aa4cda50629a090a702b1f8a0dda3";
+                ClientExecutableSha256 = "e90338fcedc11f9d8faea5e616672e94b371fd068d3e43f65fc1a683c21c0d0c";
+                ClientVersion = "2021M-hexium-v18";
                 ClientDisplayName = "Hexium 2021 Client";
+            }
+            else if (this.year == "2018")
+            {
+                ClientDir = Path.Combine(clientlocation, "HexiumPlayer2018");
+                ClientZIP = Path.Combine(clientlocation, "HexiumPlayer2018.zip");
+                ClientExe = Path.Combine(ClientDir, "HexiumPlayer2018.exe");
+                DownloadUrl = "https://hexium.wtf/downloads/HexiumPlayer2018.zip?v=e435d67f65afef58";
+                ClientArchiveSha256 = "e435d67f65afef58d091419016f14a7697e802ebab2b8c1b260068f2b3801d2b";
+                ClientExecutableSha256 = "1cef2ee8109d0bcf7316e872e430db923ba7d84ce20351e6aece8dde5fdd1325";
+                ClientVersion = "2018-hexium-v2";
+                ClientDisplayName = "Hexium 2018 Client";
+            }
+            else if (this.year == "2016")
+            {
+                ClientDir = Path.Combine(clientlocation, "HexiumPlayer2016");
+                ClientZIP = Path.Combine(clientlocation, "HexiumPlayer2016.zip");
+                ClientExe = Path.Combine(ClientDir, "HexiumPlayer2016.exe");
+                DownloadUrl = "https://hexium.wtf/downloads/HexiumPlayer2016-v2.zip?v=fad404e0b70a2311";
+                ClientArchiveSha256 = "fad404e0b70a2311bd7a20ee741130e2ff2b125842a8eff270e0bdc01ded7f45";
+                ClientExecutableSha256 = "14810c278be725ab78b33d5b8d440404a5cdfd3e5913c66fe2891db8bf13120a";
+                ClientVersion = "2016-hexium-v3";
+                ClientDisplayName = "Hexium 2016 Client";
             }
             else
             {
                 ClientDir = Path.Combine(clientlocation, "HexiumPlayer");
                 ClientZIP = Path.Combine(clientlocation, "HexiumPlayer.zip");
                 ClientExe = Path.Combine(ClientDir, "HexiumPlayer.exe");
-                DownloadUrl = "https://hexium.zip/downloads/HexiumPlayer.zip?v=d1a7c02cc0fa2de8";
-                ClientArchiveSha256 = "d1a7c02cc0fa2de8e4a624f965a03879ba17873dd5e219908822a07aca15a388";
-                ClientExecutableSha256 = "B26FF166F6D1F3287DF9B5FD10466FD7C7DFBA0FD276574EBF28942DB87E9220";
+                DownloadUrl = "https://hexium.wtf/downloads/HexiumPlayer-v13.zip?v=28447d7b7922e4ca";
+                ClientArchiveSha256 = "28447d7b7922e4ca884702d754d5ae6a33325cbda130ed8ea1f356b6ec50d20f";
+                ClientExecutableSha256 = "8bf6ce33c3571d4e1f0bbe3e7c2d1195f31b31a5bb9da73c69b389f02626737b";
 
-                ClientVersion = "2020L-hexium-projectx-v8";
+                ClientVersion = "2020L-hexium-projectx-v14";
                 ClientDisplayName = "Hexium 2020 Client";
             }
         }
@@ -559,22 +592,25 @@ namespace HexiumLauncher
 
         private bool IsCurrentClientInstalled()
         {
-            if (!File.Exists(ClientExe) || !File.Exists(cfgpath))
+            if (!File.Exists(ClientExe))
+                return false;
+
+            if (!File.Exists(cfgpath))
                 return false;
 
             try
             {
                 string config = File.ReadAllText(cfgpath);
-                if (!config.Contains("installed=true", StringComparison.OrdinalIgnoreCase)
-                    || !config.Contains($"client-version={ClientVersion}", StringComparison.OrdinalIgnoreCase))
-                {
+                if (!config.Contains($"client-version={ClientVersion}", StringComparison.OrdinalIgnoreCase))
                     return false;
-                }
 
                 using FileStream executable = File.OpenRead(ClientExe);
                 using SHA256 sha256 = SHA256.Create();
                 string actualHash = Convert.ToHexString(sha256.ComputeHash(executable));
-                return actualHash.Equals(ClientExecutableSha256, StringComparison.OrdinalIgnoreCase);
+                if (!actualHash.Equals(ClientExecutableSha256, StringComparison.OrdinalIgnoreCase))
+                    return false;
+
+                return true;
             }
             catch
             {
@@ -993,7 +1029,7 @@ namespace HexiumLauncher
 
                 if (!Uri.TryCreate(manifest.Url, UriKind.Absolute, out Uri? updateUri)
                     || updateUri.Scheme != Uri.UriSchemeHttps
-                    || !updateUri.Host.Equals("hexium.zip", StringComparison.OrdinalIgnoreCase))
+                    || !updateUri.Host.Equals("hexium.wtf", StringComparison.OrdinalIgnoreCase))
                 {
                     throw new InvalidDataException("The launcher update URL was not an approved Hexium URL.");
                 }
@@ -1316,9 +1352,38 @@ namespace HexiumLauncher
                 {
                     RegisterProtocol();
                     VerifyProtocolRegistration();
-                    File.WriteAllText(
-                        cfgpath,
-                        $"installed=true\r\nclient-version={ClientVersion}\r\nlauncher-version={LauncherVersion}\r\n");
+                    
+                    
+                    
+                    
+                    var freshLines = new[]
+                    {
+                        "installed=true",
+                        $"client-version={ClientVersion}",
+                        $"launcher-version={LauncherVersion}",
+                    };
+                    var preserved = new List<string>();
+                    if (File.Exists(cfgpath))
+                    {
+                        foreach (var line in File.ReadAllLines(cfgpath))
+                        {
+                            
+                            
+                            
+                            
+                            bool isInstalled = line.StartsWith("installed=", StringComparison.OrdinalIgnoreCase);
+                            bool isLauncherVer = line.StartsWith("launcher-version=", StringComparison.OrdinalIgnoreCase);
+                            bool isThisClientVer = line.Equals($"client-version={ClientVersion}", StringComparison.OrdinalIgnoreCase);
+
+                            if (isInstalled || isLauncherVer || isThisClientVer)
+                                continue; 
+                            if (!string.IsNullOrWhiteSpace(line))
+                                preserved.Add(line);
+                        }
+                    }
+                    var allLines = new List<string>(freshLines);
+                    allLines.AddRange(preserved);
+                    File.WriteAllText(cfgpath, string.Join("\r\n", allLines) + "\r\n");
                 }
 
                 if (setupCompleted)
@@ -1414,6 +1479,9 @@ namespace HexiumLauncher
             string[] processNames =
             {
                 "HexiumPlayer",
+                "HexiumPlayer2021",
+                "HexiumPlayer2018",
+                "HexiumPlayer2016",
                 "DevHexiumPlayerBeta",
                 "BubbaBlox",
                 "BBPlayerBeta",
@@ -1624,7 +1692,60 @@ namespace HexiumLauncher
             }
         }
 
+        private static void RetryFileAction(Action action)
+        {
+            const int attempts = 10;
+            for (int attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    action();
+                    return;
+                }
+                catch (IOException) when (attempt < attempts)
+                {
+                    Thread.Sleep(300 * attempt);
+                }
+                catch (UnauthorizedAccessException) when (attempt < attempts)
+                {
+                    Thread.Sleep(300 * attempt);
+                }
+            }
+        }
+
         private async Task DownloadVersion()
+        {
+            const string installLockName = @"Local\HexiumClientInstallV1";
+
+            using var installLock = new Semaphore(1, 1, installLockName);
+            bool ownsLock = false;
+            try
+            {
+                ownsLock = await Task.Run(() => installLock.WaitOne(TimeSpan.FromMinutes(10)));
+
+                if (!ownsLock)
+                {
+                    throw new IOException(
+                        "Another Hexium launcher is still installing the client. Close the other launcher and try again."
+                    );
+                }
+
+                if (IsCurrentClientInstalled())
+                {
+                    WriteLog("The client was installed by another launcher instance while this one waited.");
+                    return;
+                }
+
+                await DownloadVersionCore();
+            }
+            finally
+            {
+                if (ownsLock)
+                    installLock.Release();
+            }
+        }
+
+        private async Task DownloadVersionCore()
         {
 
             ServicePointManager.ServerCertificateValidationCallback = HexiumTls.Validate;
@@ -1649,7 +1770,16 @@ namespace HexiumLauncher
                     }));
                 };
 
-                await client.DownloadFileTaskAsync(DownloadUrl, ClientZIP);
+                string stagingZip = ClientZIP + "." + Environment.ProcessId + ".part";
+                RetryFileAction(() =>
+                {
+                    if (File.Exists(stagingZip))
+                        File.Delete(stagingZip);
+                });
+
+                await client.DownloadFileTaskAsync(DownloadUrl, stagingZip);
+
+                RetryFileAction(() => File.Move(stagingZip, ClientZIP, true));
 
                 using (FileStream archive = File.OpenRead(ClientZIP))
                 using (SHA256 sha256 = SHA256.Create())
@@ -1657,7 +1787,7 @@ namespace HexiumLauncher
                     string actualHash = Convert.ToHexString(sha256.ComputeHash(archive));
                     if (!actualHash.Equals(ClientArchiveSha256, StringComparison.OrdinalIgnoreCase))
                     {
-                        File.Delete(ClientZIP);
+                        RetryFileAction(() => File.Delete(ClientZIP));
                         throw new InvalidDataException(
                             $"Client archive integrity check failed. Expected {ClientArchiveSha256}, got {actualHash.ToLowerInvariant()}."
                         );
@@ -1678,7 +1808,7 @@ namespace HexiumLauncher
                     {
                         if (Directory.Exists(ClientDir))
                         {
-                            Directory.Delete(ClientDir, true);
+                            RetryFileAction(() => Directory.Delete(ClientDir, true));
                         }
 
                         await Task.Run(() =>
@@ -1687,7 +1817,7 @@ namespace HexiumLauncher
                             ZipFile.ExtractToDirectory(ClientZIP, clientlocation, true);
                         });
 
-                        File.Delete(ClientZIP);
+                        RetryFileAction(() => File.Delete(ClientZIP));
                     }
 
                     if (!File.Exists(ClientExe))
@@ -1777,7 +1907,7 @@ namespace HexiumLauncher
                 try
                 {
                     WriteAndVerifyClientAppSettings();
-                    WriteLog($"Updated and verified AppSettings.xml BaseUrl: {ClientSettingsBaseUrl}");
+                    WriteLog($"Updated and verified AppSettings.xml BaseUrl: {ClientBaseUrl}");
                 }
                 catch (Exception ex)
                 {
@@ -1807,7 +1937,7 @@ namespace HexiumLauncher
                     joinUrl += $"&jobId={Uri.EscapeDataString(jobId)}";
                 }
 
-                WriteLog($"Connecting to PlaceLauncher for place {encodedPlaceId}{(string.IsNullOrEmpty(jobId) ? "" : $" server {jobId}")} using the 2020 client.");
+                WriteLog($"Connecting to PlaceLauncher for place {encodedPlaceId}{(string.IsNullOrEmpty(jobId) ? "" : $" server {jobId}")} using the {this.year} client.");
 
                 bool serverReady = await WaitPlaceLauncherReady(joinUrl);
                 if (!serverReady)
@@ -1829,8 +1959,14 @@ namespace HexiumLauncher
                 }));
                 this.Refresh();
 
-                string arguments = $"-a \"{SiteBaseUrl}/Login/Negotiate.ashx\" -j \"{joinUrl}\" -t \"{ticket}\"";
-                WriteLog($"Launching 2020 client: {ClientExe}");
+                string clientSiteUrl = (this.year == "2016" || this.year == "2015") ? LegacyClientBaseUrl : ClientSettingsBaseUrl;
+                string clientJoinUrl = clientSiteUrl + (joinUrl.StartsWith(SiteBaseUrl) ? joinUrl.Substring(SiteBaseUrl.Length) : joinUrl.Substring(clientSiteUrl.Length));
+                string arguments = $"-a \"{clientSiteUrl}/Login/Negotiate.ashx\" -j \"{clientJoinUrl}\" -t \"{ticket}\"";
+                
+                
+                if (this.year == "2016")
+                    arguments = "--play " + arguments;
+                WriteLog($"Launching {this.year} client: {ClientExe}");
 
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
@@ -1855,7 +1991,9 @@ namespace HexiumLauncher
 
                 try
                 {
-                    FpsUnlocker.StartAsync(clientProcess?.Id ?? 0, WriteLog);
+                    
+                    if (this.year != "2018" && this.year != "2016")
+                        FpsUnlocker.StartAsync(clientProcess?.Id ?? 0, WriteLog);
 
                     ClientKeyResign.StartAsync(clientProcess?.Id ?? 0, ClientVersion, WriteLog);
                 }

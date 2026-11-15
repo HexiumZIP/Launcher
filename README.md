@@ -27,8 +27,8 @@ An open-source desktop launcher and URI protocol handler for the Hexium 2020 cli
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/YOUR_ORGANIZATION/HexiumLauncher.git
-cd HexiumLauncher
+git clone https://github.com/HexiumZIP/Launcher.git
+cd Launcher
 ```
 
 ### 2. Build Debug

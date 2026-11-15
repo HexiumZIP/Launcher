@@ -78,14 +78,22 @@ namespace HexiumLauncher
             if (processId <= 0) return;
             if (clientVersion == null || clientVersion.IndexOf("2021", StringComparison.OrdinalIgnoreCase) < 0)
                 return;
+            
+            
+            
+            
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            var token = cts.Token;
             _ = Task.Run(() =>
             {
-                try { Run(processId, log); }
+                try { Run(processId, token, log); }
+                catch (OperationCanceledException) { log?.Invoke("[KeyResign] timed out (15 s deadline)"); }
                 catch (Exception ex) { log?.Invoke($"[KeyResign] non-fatal: {ex.Message}"); }
-            });
+                finally { cts.Dispose(); }
+            }, token);
         }
 
-        private static void Run(int processId, Action<string> log)
+        private static void Run(int processId, CancellationToken token, Action<string> log)
         {
             byte[] hexBlock = Encoding.ASCII.GetBytes(HexiumKeyBlock);
             byte[][] prefixes = new byte[UpstreamKeyPrefixes.Length][];
@@ -104,7 +112,11 @@ namespace HexiumLauncher
                 int[] delays = { 1500, 2000, 2500, 3000, 4000, 5000 };
                 foreach (int delay in delays)
                 {
+                    
+                    token.ThrowIfCancellationRequested();
                     Thread.Sleep(delay);
+                    token.ThrowIfCancellationRequested();
+
                     ScanAndPatch(handle, prefixes, hexBlock, done, placeIdDone, log);
                     if (done.Count == prefixes.Length)
                     {

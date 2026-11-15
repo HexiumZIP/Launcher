@@ -132,7 +132,7 @@ namespace HexiumLauncher
                                     new JsonObject
                                     {
                                         ["label"] = "Visit Revival",
-                                        ["url"] = "https://hexium.zip"
+                                        ["url"] = "https://hexium.wtf"
                                     }
                                 }
                             }

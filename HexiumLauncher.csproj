@@ -15,10 +15,10 @@
     <Company>Hexium</Company>
     <Authors>Hexium</Authors>
     <Copyright>Copyright © Hexium 2026</Copyright>
-    <Description>Installer and protocol launcher for the Hexium 2020 client.</Description>
-    <Version>2.1.44</Version>
-    <AssemblyVersion>2.1.40.0</AssemblyVersion>
-    <FileVersion>2.1.40.0</FileVersion>
+    <Description>Installer and protocol launcher for the Hexium 2016, 2018, 2020 and 2021 clients.</Description>
+    <Version>2.1.70</Version>
+    <AssemblyVersion>2.1.70.0</AssemblyVersion>
+    <FileVersion>2.1.70.0</FileVersion>
     <InformationalVersion>2.1.22-projectx-client</InformationalVersion>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
